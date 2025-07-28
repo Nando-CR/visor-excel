@@ -24,29 +24,24 @@ if uploaded_file:
             if not st.session_state.mostrar_visor:
                 st.subheader("Vista previa de Hoja1")
 
-                for i in range(len(hoja1_df)):
-                    row = hoja1_df.iloc[i]
+                # Crear una copia para agregar columna de marcado
+                hoja1_df_display = hoja1_df.copy()
+                hoja1_df_display.insert(0, "ESC.", ["✅" if i in st.session_state.lineas_marcadas else "" for i in hoja1_df.index])
+
+                # Mostrar tabla con sombreado
+                def highlight_marked(row):
+                    return ["background-color: #d4edda" if row.name in st.session_state.lineas_marcadas else "" for _ in row]
+
+                st.dataframe(hoja1_df_display.style.apply(highlight_marked, axis=1), use_container_width=True)
+
+                # Casillas para marcar tareas realizadas
+                st.subheader("Marcar tareas realizadas")
+                for i in hoja1_df.index:
                     marcado = i in st.session_state.lineas_marcadas
-
-                    container_style = (
-                        "background-color:#d4edda; border:2px solid #28a745;"
-                        if marcado else "background-color:#f9f9f9; border:1px solid #ccc;"
-                    )
-
-                    with st.container():
-                        cols = st.columns([0.05, 0.95])
-                        with cols[0]:
-                            if st.checkbox("", key=f"esc_chk_{i}", value=marcado):
-                                st.session_state.lineas_marcadas.add(i)
-                            else:
-                                st.session_state.lineas_marcadas.discard(i)
-                        with cols[1]:
-                            row_data = " | ".join([f"{col}: {row[col]}" for col in hoja1_df.columns if pd.notna(row[col])])
-                            st.markdown(f"""
-                                <div style='{container_style} border-radius:10px; padding:10px; margin:5px;'>
-                                    <strong style='font-size:16px;'>{row_data}</strong>
-                                </div>
-                            """, unsafe_allow_html=True)
+                    if st.checkbox(f"Fila {i+1}", key=f"chk_hoja1_{i}", value=marcado):
+                        st.session_state.lineas_marcadas.add(i)
+                    else:
+                        st.session_state.lineas_marcadas.discard(i)
 
                 if st.button("Ampliar - Mostrar Visor"):
                     st.session_state.mostrar_visor = True
