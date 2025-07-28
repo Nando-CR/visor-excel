@@ -24,25 +24,33 @@ if uploaded_file:
             if not st.session_state.mostrar_visor:
                 st.subheader("Vista previa de Hoja1")
 
-                # Agregar columna de marcación "ESC."
-                hoja1_df = hoja1_df.copy()
-                hoja1_df["ESC."] = hoja1_df.index.map(lambda i: "✅" if i in st.session_state.lineas_marcadas else "")
-
-                def highlight_row(row):
-                    return ['background-color: #d4edda' if row.name in st.session_state.lineas_marcadas else '' for _ in row]
-
-                styled_df = hoja1_df.style.apply(highlight_row, axis=1)
-                st.dataframe(styled_df, use_container_width=True)
-
                 for i in range(len(hoja1_df)):
-                    if st.button(f"Marcar ESC. {i+1}", key=f"btn_esc_{i}"):
-                        if i in st.session_state.lineas_marcadas:
-                            st.session_state.lineas_marcadas.discard(i)
-                        else:
-                            st.session_state.lineas_marcadas.add(i)
+                    row = hoja1_df.iloc[i]
+                    marcado = i in st.session_state.lineas_marcadas
+
+                    container_style = (
+                        "background-color:#d4edda; border:2px solid #28a745;"
+                        if marcado else "background-color:#f9f9f9; border:1px solid #ccc;"
+                    )
+
+                    with st.container():
+                        cols = st.columns([0.05, 0.95])
+                        with cols[0]:
+                            if st.checkbox("", key=f"esc_chk_{i}", value=marcado):
+                                st.session_state.lineas_marcadas.add(i)
+                            else:
+                                st.session_state.lineas_marcadas.discard(i)
+                        with cols[1]:
+                            row_data = " | ".join([f"{col}: {row[col]}" for col in hoja1_df.columns if pd.notna(row[col])])
+                            st.markdown(f"""
+                                <div style='{container_style} border-radius:10px; padding:10px; margin:5px;'>
+                                    <strong style='font-size:16px;'>{row_data}</strong>
+                                </div>
+                            """, unsafe_allow_html=True)
 
                 if st.button("Ampliar - Mostrar Visor"):
                     st.session_state.mostrar_visor = True
+
             else:
                 if 'Visor' in excel_file.sheet_names:
                     visor_df = excel_file.parse('Visor', header=None)
@@ -97,4 +105,3 @@ if uploaded_file:
 
     except Exception as e:
         st.error(f"Error al procesar el archivo: {e}")
-
