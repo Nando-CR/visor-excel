@@ -16,14 +16,30 @@ if "lineas_marcadas" not in st.session_state:
 
 if uploaded_file:
     try:
-        excel_file = pd.ExcelFile(uploaded_file)
+        excel_file = pd.ExcelFile(uploaded_file, engine="openpyxl")
 
         if 'Hoja1' in excel_file.sheet_names:
             hoja1_df = excel_file.parse('Hoja1')
 
             if not st.session_state.mostrar_visor:
                 st.subheader("Vista previa de Hoja1")
-                st.dataframe(hoja1_df, use_container_width=True)
+
+                # Agregar columna de marcación "ESC."
+                hoja1_df = hoja1_df.copy()
+                hoja1_df["ESC."] = hoja1_df.index.map(lambda i: "✅" if i in st.session_state.lineas_marcadas else "")
+
+                def highlight_row(row):
+                    return ['background-color: #d4edda' if row.name in st.session_state.lineas_marcadas else '' for _ in row]
+
+                styled_df = hoja1_df.style.apply(highlight_row, axis=1)
+                st.dataframe(styled_df, use_container_width=True)
+
+                for i in range(len(hoja1_df)):
+                    if st.button(f"Marcar ESC. {i+1}", key=f"btn_esc_{i}"):
+                        if i in st.session_state.lineas_marcadas:
+                            st.session_state.lineas_marcadas.discard(i)
+                        else:
+                            st.session_state.lineas_marcadas.add(i)
 
                 if st.button("Ampliar - Mostrar Visor"):
                     st.session_state.mostrar_visor = True
@@ -75,7 +91,10 @@ if uploaded_file:
                     st.button("Volver", on_click=lambda: st.session_state.update({"mostrar_visor": False}))
                 else:
                     st.warning("La hoja 'Visor' no está presente en el archivo.")
+
         else:
             st.error("La hoja 'Hoja1' no se encuentra en el archivo.")
+
     except Exception as e:
         st.error(f"Error al procesar el archivo: {e}")
+
